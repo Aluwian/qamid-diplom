@@ -1,8 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+python_venv/
+venv/
+ENV/
+
+# Pytest
+.pytest_cache/
+
+# Allure
+allure-results/
+allure-report/
+
+# IDE
 .idea/
-.gradle/
+
+*.swp
+.DS_Store
+
+# Java/Android
 build/
-*.iml
+.gradle/
 local.properties
 *.apk
 *.ap_
-.DS_Store
+*.iml
