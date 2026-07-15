@@ -20,7 +20,7 @@ class TestLogin:
         )
         assert mission_button.is_displayed()
 
-    # Вход с невалидным логином и валидным паролем
+    # Отправка пустой формы
     def test_empty_form(self, fresh_driver):
         driver = fresh_driver
         login_page = LoginPage(driver)
@@ -32,3 +32,27 @@ class TestLogin:
             timeout=10
         )
         assert news_title.is_displayed()
+
+    # Проверка отправки формы с невалидными данными
+    @pytest.mark.parametrize(
+        "login, password",
+        [
+            # Оба поля невалидные
+            ("incorrect", "incorrect"),
+            # Поле login валидное, а поле password невалидное
+            ("login2", "incorrect"),
+            # Поле login невалидное, а поле password валидное
+            ("incorrect", "password2"),
+        ]
+    )
+    def test_invalid_credentials(self, fresh_driver, login, password):
+        driver = fresh_driver
+        login_page = LoginPage(driver)
+        login_page.login(login=login, password=password)
+
+        auth_title = login_page.find_element(
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiSelector().text("Авторизация")',
+            timeout=10
+        )
+        assert auth_title.is_displayed()
