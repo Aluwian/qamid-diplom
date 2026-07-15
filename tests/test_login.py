@@ -4,9 +4,9 @@ from pages.login_page import LoginPage
 
 class TestLogin:
 
-    # 1.1 Авторизация. Вход с валидными данными
-    def test_valid_authorization(self, create_android_driver):
-        driver = create_android_driver
+    # Вход с валидными данными
+    def test_valid_authorization(self, fresh_driver):
+        driver = fresh_driver
         login_page = LoginPage(driver)
         login_page.login(login="login2", password="password2")
         news_title = login_page.find_element(
@@ -19,4 +19,16 @@ class TestLogin:
             AppiumBy.ACCESSIBILITY_ID, "Наша Миссия", timeout=10
         )
         assert mission_button.is_displayed()
-        # driver.reset()
+
+    # Вход с невалидным логином и валидным паролем
+    def test_empty_form(self, fresh_driver):
+        driver = fresh_driver
+        login_page = LoginPage(driver)
+        login_page.click_login_button()
+
+        news_title = login_page.find_element(
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiSelector().text("Авторизация")',
+            timeout=10
+        )
+        assert news_title.is_displayed()

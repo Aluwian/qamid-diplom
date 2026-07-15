@@ -19,3 +19,6 @@ class LoginPage(BasePage):
         self.send_keys(*self.LOGIN_FIELD, login)
         self.send_keys(*self.PASSWORD_FIELD, password)
         self.click(*self.LOGIN_BUTTON)
+
+    def click_login_button(self):
+        self.click(*self.LOGIN_BUTTON)
