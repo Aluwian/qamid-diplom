@@ -33,19 +33,22 @@ class TestLogin:
         )
         assert news_title.is_displayed()
 
+        toast_text = login_page.get_toast_message(timeout=5)
+        assert "Логин и пароль не могут быть пустыми" in toast_text
+
     # Проверка отправки формы с невалидными данными
     @pytest.mark.parametrize(
-        "login, password",
+        "login, password, expected_message",
         [
             # Оба поля невалидные
-            ("incorrect", "incorrect"),
+            ("incorrect", "incorrect", "Что-то пошло не так. Попробуйте позднее."),
             # Поле login валидное, а поле password невалидное
-            ("login2", "incorrect"),
+            ("login2", "incorrect", "Что-то пошло не так. Попробуйте позднее."),
             # Поле login невалидное, а поле password валидное
-            ("incorrect", "password2"),
+            ("incorrect", "password2", "Что-то пошло не так. Попробуйте позднее."),
         ]
     )
-    def test_invalid_credentials(self, fresh_driver, login, password):
+    def test_invalid_credentials(self, fresh_driver, login, password, expected_message):
         driver = fresh_driver
         login_page = LoginPage(driver)
         login_page.login(login=login, password=password)
@@ -56,3 +59,6 @@ class TestLogin:
             timeout=10
         )
         assert auth_title.is_displayed()
+
+        toast_text = login_page.get_toast_message(timeout=5)
+        assert expected_message in toast_text

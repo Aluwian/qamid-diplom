@@ -36,12 +36,11 @@ class BasePage:
         element = self.find_element(by, locator, timeout)
         return element.text
 
-    def get_toast_message(self, timeout=3):
-        # Пока пробуем отловить системные сообщения
-        try:
-            # Стандартный локатор для всех Android Toast-сообщений
-            toast_locator = (AppiumBy.XPATH, "//android.widget.Toast")
-            toast_element = self.find_element(*toast_locator, timeout=timeout)
-            return toast_element.text
-        except Exception:
-            return None
+    def get_toast_message(self, timeout=10):
+        # Отлов android.widget.Toast с сообщениями об ошибках
+        toast_locator = (AppiumBy.XPATH, "//android.widget.Toast")
+        wait = WebDriverWait(self.driver, timeout, poll_frequency=0.1)
+        toast_element = wait.until(
+            expected_conditions.presence_of_element_located(toast_locator)
+        )
+        return toast_element.text
