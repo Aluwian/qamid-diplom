@@ -44,3 +44,12 @@ class BasePage:
             expected_conditions.presence_of_element_located(toast_locator)
         )
         return toast_element.text
+
+    def tap_element_center(self, by, locator, times=1):
+        # Кликает по центру указанного элемента несколько раз
+        element = self.find_element(by, locator)
+        rect = element.rect
+        center_x = rect['x'] + rect['width'] // 2
+        center_y = rect['y'] + rect['height'] // 2
+        for _ in range(times):
+            self.driver.tap([(center_x, center_y)])

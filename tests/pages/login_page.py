@@ -22,3 +22,12 @@ class LoginPage(BasePage):
 
     def click_login_button(self):
         self.click(*self.LOGIN_BUTTON)
+
+    def click_login_button_fast(self):
+        """Кликает по кнопке входа БЕЗ проверки element_to_be_clickable.
+        Используется для тестов на множественные быстрые клики."""
+        element = self.driver.find_element(*self.LOGIN_BUTTON)
+        element.click()
+
+    def tap_login_button_multiple_times(self, times=3):
+        self.tap_element_center(*self.LOGIN_BUTTON, times)
