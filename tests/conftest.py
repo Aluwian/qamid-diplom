@@ -3,9 +3,11 @@ from appium.options.android import UiAutomator2Options
 import pytest
 from pages.login_page import LoginPage
 
+
 APPIUM_PORT = 4723
 APPIUM_HOST = '127.0.0.1'
 APP_PACKAGE = "ru.iteco.fmhandroid"
+
 
 # 1. Создание драйвера с нужными настройками
 def create_driver(no_reset=True):
@@ -22,6 +24,7 @@ def create_driver(no_reset=True):
     )
     return driver
 
+
 # 2. Базовый драйвер(для быстрого старта, сохраняется состояние)
 @pytest.fixture(scope='function')
 def android_driver():
@@ -29,7 +32,8 @@ def android_driver():
     yield driver
     driver.quit()
 
-# 3. "Свежий" драйвер специально для тестов АВТОРИЗАЦИИ(чистый старт без авторизации, состояние не сохраняется)
+
+# 3. "Свежий" драйвер специально для тестов АВТОРИЗАЦИИ
 @pytest.fixture(scope="function")
 def fresh_driver():
     driver = create_driver(no_reset=False)

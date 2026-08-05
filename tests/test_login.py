@@ -2,6 +2,7 @@ import pytest
 from appium.webdriver.common.appiumby import AppiumBy
 from pages.login_page import LoginPage
 
+
 class TestLogin:
 
     # Вход с валидными данными
@@ -48,7 +49,13 @@ class TestLogin:
             ("incorrect", "password2", "Что-то пошло не так. Попробуйте позднее."),
         ]
     )
-    def test_invalid_credentials(self, fresh_driver, login, password, expected_message):
+    def test_invalid_credentials(
+            self,
+            fresh_driver,
+            login,
+            password,
+            expected_message
+    ):
         driver = fresh_driver
         login_page = LoginPage(driver)
         login_page.login(login=login, password=password)
@@ -70,7 +77,8 @@ class TestLogin:
         login_page.send_keys(*login_page.LOGIN_FIELD, "login2")
         login_page.send_keys(*login_page.PASSWORD_FIELD, "password2")
 
-        # После клика по кнопке (использовать локатор, а не координаты) кнопка блокируется и повторно кликнуть не удается
+        # После клика по кнопке (использовать локатор, а не координаты)
+        # кнопка блокируется и повторно кликнуть не удается
         login_page.tap_login_button_multiple_times(3)
 
         news_title = login_page.find_element(
@@ -113,5 +121,3 @@ class TestLogin:
             timeout=10
         )
         assert news_title_after_restart.is_displayed()
-
-

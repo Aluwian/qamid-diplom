@@ -28,7 +28,8 @@ class BasePage:
     def send_keys(self, by, value, input_text):
         # Ввод текста в поле
         element = self.find_element(by, value)
-        element.clear() # Очищаем от старого текста на случай, если поле заполнено
+        # Очищаем от старого текста на случай, если поле заполнено
+        element.clear()
         element.send_keys(input_text)
 
     def get_text(self, by, locator, timeout=10):
