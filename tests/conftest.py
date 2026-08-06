@@ -1,5 +1,6 @@
 from appium import webdriver
 from appium.options.android import UiAutomator2Options
+import allure
 import pytest
 from pages.login_page import LoginPage
 
@@ -25,19 +26,40 @@ def create_driver(no_reset=True):
     return driver
 
 
+def make_screen(driver, name="failure"):
+    try:
+        png = driver.get_screenshot_as_png()
+        allure.attach(
+            png,
+            name=name,
+            attachment_type=allure.attachment_type.PNG,
+        )
+    except Exception:
+        pass
+
+
+def check_test_failed(request):
+    rep_call = getattr(request.node, "rep_call", None)
+    return rep_call is not None and rep_call.failed
+
+
 # 2. Базовый драйвер(для быстрого старта, сохраняется состояние)
 @pytest.fixture(scope='function')
-def android_driver():
+def android_driver(request):
     driver = create_driver(no_reset=True)
     yield driver
+    if check_test_failed(request):
+        make_screen(driver, request.node.name)
     driver.quit()
 
 
 # 3. "Свежий" драйвер специально для тестов АВТОРИЗАЦИИ
 @pytest.fixture(scope="function")
-def fresh_driver():
+def fresh_driver(request):
     driver = create_driver(no_reset=False)
     yield driver
+    if check_test_failed(request):
+        make_screen(driver, request.node.name)
     driver.quit()
 
 
@@ -55,3 +77,11 @@ def authorized_driver(android_driver):
     yield driver
 
     driver.terminate_app(APP_PACKAGE)
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # Без него фикстуры не знают: упал тест или нет
+    outcome = yield
+    report = outcome.get_result()
+    setattr(item, f"rep_{report.when}", report)
