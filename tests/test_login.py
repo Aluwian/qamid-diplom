@@ -38,7 +38,7 @@ class TestLogin:
     def test_empty_form(self, fresh_driver):
         driver = fresh_driver
         login_page = LoginPage(driver)
-        with allure.step("Кликнуть на кнопку «Войти» без ввода данных в поля авторизации"):
+        with allure.step("Кликнуть на кнопку «Войти» без ввода данных"):
             login_page.click_login_button()
 
         with allure.step("Проверить, что остались на экране «Авторизация»"):
@@ -49,7 +49,7 @@ class TestLogin:
             )
             assert news_title.is_displayed()
 
-        with allure.step("Проверить сообщение: логин и пароль не могут быть пустыми"):
+        with allure.step("Проверить сообщение об ошибке авторизации"):
             toast_text = login_page.get_toast_message(timeout=5)
             assert "Логин и пароль не могут быть пустыми" in toast_text
 
