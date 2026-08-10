@@ -1,5 +1,6 @@
 from appium import webdriver
 from appium.options.android import UiAutomator2Options
+from appium.webdriver.common.appiumby import AppiumBy
 import allure
 import pytest
 from pages.login_page import LoginPage
@@ -72,7 +73,14 @@ def authorized_driver(android_driver):
     driver.activate_app(APP_PACKAGE)
 
     login_page = LoginPage(driver)
-    login_page.login(login="login2", password="password2")
+    try:
+        login_page.find_element(
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiSelector().text("Новости")',
+            timeout=5
+        )
+    except Exception:
+        login_page.login(login="login2", password="password2")
 
     yield driver
 
