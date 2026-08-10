@@ -4,6 +4,8 @@ from appium.webdriver.common.appiumby import AppiumBy
 import allure
 import pytest
 from pages.login_page import LoginPage
+from pages.main_page import MainPage
+from pages.news_page import NewsPage
 
 
 APPIUM_PORT = 4723
@@ -85,6 +87,18 @@ def authorized_driver(android_driver):
     yield driver
 
     driver.terminate_app(APP_PACKAGE)
+
+
+#Фикстура для перехода в режим создания новости - нужна для удаления дублирования
+@pytest.fixture
+def create_news_form(authorized_driver):
+    main_page = MainPage(authorized_driver)
+    news_page = NewsPage(authorized_driver)
+    with allure.step("Открыть форму создания новости"):
+        main_page.go_to_news()
+        news_page.open_control_panel()
+        news_page.open_create_news_form()
+    return news_page
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
