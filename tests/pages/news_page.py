@@ -73,6 +73,12 @@ class NewsPage(BasePage):
         self.click(*self.DATE_FIELD)
         self.click(*self.OK_BUTTON)
 
+
+    def select_current_time(self):
+        # Открыть время и подтвердить текущее время
+        self.click(*self.TIME_FIELD)
+        self.click(*self.OK_BUTTON)
+
     def set_time_via_keyboard(self, hour, minute):
         # Открыть время → режим клавиатуры → ввести час и минуту → OK
         self.click(*self.TIME_FIELD)

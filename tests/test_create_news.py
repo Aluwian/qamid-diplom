@@ -28,6 +28,7 @@ class TestCreateNews:
         with allure.step("Проверить новость в панели управления"):
             assert news_page.is_news_in_control_panel(title)
 
+
     @allure.id("2.1")
     @allure.title("Отправка пустой формы")
     @allure.severity(allure.severity_level.CRITICAL)
@@ -40,6 +41,30 @@ class TestCreateNews:
             news_page.open_control_panel()
             news_page.open_create_news_form()
         with allure.step("Кликнуть кнопку Сохранить без заполнения полей"):
+            news_page.save_news()
+        with allure.step("Проверить toast об ошибке"):
+            toast = news_page.get_toast_message(timeout=5)
+            assert "Заполните пустые поля" in toast
+
+
+    @allure.id("2.3")
+    @allure.title("Сохранение формы без выбора категории")
+    @allure.severity(allure.severity_level.CRITICAL)
+    @allure.story("Негативные сценарии")
+    def test_create_news_without_category(self, authorized_driver):
+        main_page = MainPage(authorized_driver)
+        news_page = NewsPage(authorized_driver)
+        title = f"Автотест_{datetime.now().strftime('%H%M%S')}"
+        with allure.step("Открыть форму создания новости"):
+            main_page.go_to_news()
+            news_page.open_control_panel()
+            news_page.open_create_news_form()
+        with allure.step("Заполнить все поля, кроме категории"):
+            news_page.fill_title(title)
+            news_page.select_today_date()
+            news_page.select_current_time()
+            news_page.fill_description("Описание автотеста")
+        with allure.step("Кликнуть Сохранить без категории"):
             news_page.save_news()
         with allure.step("Проверить toast об ошибке"):
             toast = news_page.get_toast_message(timeout=5)
