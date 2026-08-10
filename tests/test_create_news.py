@@ -52,18 +52,17 @@ class TestCreateNews:
             toast = news_page.get_toast_message(timeout=5)
             assert "Заполните пустые поля" in toast
 
-    @allure.id("2.4-2.8, 2.10-2.12")
+    @allure.id("2.4-2.7, 2.10-2.12")
     @allure.title("Валидация заголовка: валидные значения")
     @allure.severity(allure.severity_level.NORMAL)
     @allure.story("Позитивные сценарии")
     @pytest.mark.parametrize(
         "title",
         [
-            "AutotestTitle",      # 2.4 латиница
-            "АвтотестЗаголовок",  # 2.5 кириллица
+            "AutotestValidationTitle",      # 2.4 латиница
+            "АвтотестВалидацияЗаголовка",  # 2.5 кириллица
             "1234567890",         # 2.6 цифры
             "!@#$%^&*()",         # 2.7 символы
-            " ",                  # 2.8 пробел
             "A",                  # 2.10 один символ
             "A" * 100,            # 2.11 максимум 100
             "A" * 99,             # 2.12 максимум - 1
@@ -81,20 +80,28 @@ class TestCreateNews:
         with allure.step("Проверить новость в панели управления"):
             assert news_page.is_news_in_control_panel(title)
 
-    @allure.id("2.9")
-    @allure.title("Отправка пустого заголовка")
+    @allure.id("2.8-2.9")
+    @allure.title("Отправка пустого или пробельного заголовка")
     @allure.severity(allure.severity_level.CRITICAL)
     @allure.story("Негативные сценарии")
-    def test_create_news_title_empty(self, create_news_form):
+    @pytest.mark.parametrize(
+        "title",
+        [
+            " ",  # 2.8 пробел
+            "",   # 2.9 пустое поле
+        ],
+    )
+    def test_create_news_title_empty(self, create_news_form, title):
         news_page = create_news_form
-        with allure.step("Заполнить все поля, кроме заголовка"):
+        with allure.step("Заполнить все поля, кроме валидного заголовка"):
             news_page.select_category("Объявление")
+            if title:
+                news_page.fill_title(title)
             news_page.select_today_date()
             news_page.select_current_time()
             news_page.fill_description("Описание автотеста")
-        with allure.step("Сохранить с пустым заголовком"):
+        with allure.step("Сохранить с пустым или пробельным заголовком"):
             news_page.save_news()
         with allure.step("Проверить toast об ошибке"):
             toast = news_page.get_toast_message(timeout=5)
             assert "Заполните пустые поля" in toast
-
