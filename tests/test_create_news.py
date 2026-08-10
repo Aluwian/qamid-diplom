@@ -27,3 +27,20 @@ class TestCreateNews:
             )
         with allure.step("Проверить новость в панели управления"):
             assert news_page.is_news_in_control_panel(title)
+
+    @allure.id("2.1")
+    @allure.title("Отправка пустой формы")
+    @allure.severity(allure.severity_level.CRITICAL)
+    @allure.story("Негативные сценарии")
+    def test_create_news_empty_form(self, authorized_driver):
+        main_page = MainPage(authorized_driver)
+        news_page = NewsPage(authorized_driver)
+        with allure.step("Открыть форму создания новости"):
+            main_page.go_to_news()
+            news_page.open_control_panel()
+            news_page.open_create_news_form()
+        with allure.step("Кликнуть кнопку Сохранить без заполнения полей"):
+            news_page.save_news()
+        with allure.step("Проверить toast об ошибке"):
+            toast = news_page.get_toast_message(timeout=5)
+            assert "Заполните пустые поля" in toast
