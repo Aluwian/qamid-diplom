@@ -97,3 +97,36 @@ class TestCreateNews:
         with allure.step("Проверить toast об ошибке"):
             toast = news_page.get_toast_message(timeout=5)
             assert "Заполните пустые поля" in toast
+
+    @allure.id("2.25, 2.28")
+    @allure.title("Валидация времени: ручной ввод (сегодня)")
+    @allure.severity(allure.severity_level.NORMAL)
+    @allure.story("Позитивные сценарии")
+    @pytest.mark.parametrize(
+        "time_options",
+        [
+            {"type": "keyboard", "offset": 0},  # 2.25 текущее
+            {"type": "keyboard", "offset": 1},  # 2.28 +1 мин
+        ],
+        ids=["2.25_current", "2.28_plus_1min"],
+    )
+    def test_create_news_time_keyboard_today(self, create_news_form, time_options):
+        news_page = create_news_form
+        with allure.step("Создать новость с временем через клавиатуру"):
+            title, _ = news_page.create_news(time=time_options)
+        with allure.step("Проверить новость в панели управления"):
+            assert news_page.is_news_in_control_panel(title)
+
+    @allure.id("2.29")
+    @allure.title("При дате «Завтра» время раньше текущего на часах принимается")
+    @allure.severity(allure.severity_level.NORMAL)
+    @allure.story("Позитивные сценарии")
+    def test_create_news_time_before_now_with_tomorrow(self, create_news_form):
+        news_page = create_news_form
+        with allure.step("Создать новость: завтра + время раньше текущего на часах"):
+            title, _ = news_page.create_news(
+                date="tomorrow",
+                time={"type": "keyboard", "offset": -60},
+            )
+        with allure.step("Проверить новость в панели управления"):
+            assert news_page.is_news_in_control_panel(title)

@@ -85,9 +85,28 @@ class NewsPage(BasePage):
         self.click(*self.DATE_FIELD)
         self.click(*self.OK_BUTTON)
 
+    def select_tomorrow_date(self):
+        # День в календаре: content-desc вида "13 августа 2026" (день с ведущим нулём)
+        tomorrow = datetime.now() + timedelta(days=1)
+        months_ru = {
+            1: "января", 2: "февраля", 3: "марта", 4: "апреля",
+            5: "мая", 6: "июня", 7: "июля", 8: "августа",
+            9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
+        }
+        date_label = (
+            f"{tomorrow.day:02d} {months_ru[tomorrow.month]} {tomorrow.year}"
+        )
+        self.click(*self.DATE_FIELD)
+        if tomorrow.day == 1:
+            self.click(*self.NEXT_MONTH_BUTTON)
+        self.click(AppiumBy.ACCESSIBILITY_ID, date_label)
+        self.click(*self.OK_BUTTON)
+
     def select_date(self, date="today"):
         if date == "today":
             self.select_today_date()
+        elif date == "tomorrow":
+            self.select_tomorrow_date()
         else:
             raise ValueError(f"Unsupported date: {date}")
 
