@@ -12,12 +12,9 @@ class TestCreateNews:
     @allure.story("Позитивные сценарии")
     def test_create_news_valid(self, create_news_form):
         news_page = create_news_form
-        title = f"Автотест_{datetime.now().strftime('%H%M%S')}"
         with allure.step("Заполнить форму и сохранить"):
-            news_page.create_news(
-                category="Объявление",
-                title=title,
-                description="Описание автотеста",
+            title, _ = news_page.create_news(
+                time={"type": "keyboard", "offset": 1},
             )
         with allure.step("Проверить новость в панели управления"):
             assert news_page.is_news_in_control_panel(title)
@@ -68,15 +65,10 @@ class TestCreateNews:
             "A" * 99,             # 2.12 максимум - 1
         ],
     )
-    def test_create_news_title_valid(self, create_news_form, title):
+    def test_create_news_title_validation(self, create_news_form, title):
         news_page = create_news_form
         with allure.step("Заполнить форму с проверяемым заголовком и сохранить"):
-            news_page.select_category("Объявление")
-            news_page.fill_title(title)
-            news_page.select_today_date()
-            news_page.select_current_time()
-            news_page.fill_description("Описание автотеста")
-            news_page.save_news()
+            title, _ = news_page.create_news(title=title)
         with allure.step("Проверить новость в панели управления"):
             assert news_page.is_news_in_control_panel(title)
 

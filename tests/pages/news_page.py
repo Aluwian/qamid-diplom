@@ -46,6 +46,14 @@ class NewsPage(BasePage):
     TIME_TOGGLE_MODE = (AppiumBy.ID, "android:id/toggle_mode")
     TIME_INPUT_HOUR = (AppiumBy.ID, "android:id/input_hour")
     TIME_INPUT_MINUTE = (AppiumBy.ID, "android:id/input_minute")
+    SORT_NEWS_BUTTON = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/sort_news_material_button",
+    )
+    VIEW_NEWS_ITEM = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/view_news_item_image_view",
+    )
 
     def open_control_panel(self):
         # Переход в панель управления новостями (кнопка с карандашом)
@@ -64,15 +72,24 @@ class NewsPage(BasePage):
         )
         self.click(*category_option)
 
-    def fill_title(self, title):
-        # Ввод заголовка
+    def fill_title(self, title=None, prefix="Автотест"):
+        # title=None → уникальный заголовок: Автотест_ЧЧММСС
+        # title передан → пишем как есть (для валидации: "A", "A"*100 и т.д.)
+        if title is None:
+            title = f"{prefix}_{datetime.now().strftime('%H%M%S')}"
         self.send_keys(*self.TITLE_FIELD, title)
+        return title
 
     def select_today_date(self):
         # Открыть календарь и подтвердить текущую дату
         self.click(*self.DATE_FIELD)
         self.click(*self.OK_BUTTON)
 
+    def select_date(self, date="today"):
+        if date == "today":
+            self.select_today_date()
+        else:
+            raise ValueError(f"Unsupported date: {date}")
 
     def select_current_time(self):
         # Открыть время и подтвердить текущее время
@@ -80,38 +97,97 @@ class NewsPage(BasePage):
         self.click(*self.OK_BUTTON)
 
     def set_time_via_keyboard(self, hour, minute):
-        # Открыть время → режим клавиатуры → ввести час и минуту → OK
+        # Открыть время → клавиатура → час/минута → OK
         self.click(*self.TIME_FIELD)
         self.click(*self.TIME_TOGGLE_MODE)
         self.send_keys(*self.TIME_INPUT_HOUR, f"{hour:02d}")
         self.send_keys(*self.TIME_INPUT_MINUTE, f"{minute:02d}")
         self.click(*self.OK_BUTTON)
 
-    def fill_description(self, description):
-        # Ввод описания новости
+    def select_time(self, options=None):
+        # options:
+        #   {"type": "auto"}                         → текущее через OK
+        #   {"type": "keyboard", "offset": 0}          → текущее с клавиатуры (2.25)
+        #   {"type": "keyboard", "offset": 1}          → +1 мин (2.28)
+        #   {"type": "keyboard", "hour": 10, "minute": 30}  → точное время
+        options = options or {"type": "auto"}
+        kind = options["type"]
+
+        if kind == "auto":
+            self.select_current_time()
+            return
+
+        if kind == "keyboard":
+            if "hour" in options and "minute" in options:
+                hour, minute = options["hour"], options["minute"]
+            else:
+                offset = options.get("offset", 0)
+                target = datetime.now() + timedelta(minutes=offset)
+                hour, minute = target.hour, target.minute
+            self.set_time_via_keyboard(hour, minute)
+            return
+
+        raise ValueError(f"Unsupported time options: {options}")
+
+    def fill_description(self, description=None, prefix="Описание автотеста"):
+        # description=None → всегда уникальное: Описание автотеста_ЧЧММСС
+        # description передан → пишем как есть (негативы и т.п.)
+        if description is None:
+            description = f"{prefix}_{datetime.now().strftime('%H%M%S')}"
         self.send_keys(*self.DESCRIPTION_FIELD, description)
+        return description
 
     def save_news(self):
         # Клик на кнопку Сохранить
         self.click(*self.SAVE_BUTTON)
 
-    def create_news(self, category, title, description, time_offset_minutes=1):
-        # Полное заполнение формы и сохранение(для позитивных сценариев)
+    # Заполняет форму создания новости и нажимает «Сохранить»
+    def create_news(
+            self,
+            category="Объявление",
+            title=None,
+            description=None,
+            date="today",
+            time=None,
+    ):
+        # category — по умолчанию «Объявление»
         self.select_category(category)
-        self.fill_title(title)
-        self.select_today_date()
-        target = datetime.now() + timedelta(minutes=time_offset_minutes)
-        self.set_time_via_keyboard(target.hour, target.minute)
-        self.fill_description(description)
+        # title — если не передать, подставятся уникальные
+        title = self.fill_title(title)
+        # date — по умолчанию сегодня
+        self.select_date(date)
+        # time — словарь для select_time; если не передать, берётся текущее время (auto)
+        self.select_time(time)
+        # description — если не передать, подставятся уникальные
+        description = self.fill_description(description)
         self.save_news()
+        # Возвращает (title, description) для ассертов
+        return title, description
 
-    def is_news_in_control_panel(self, title, timeout=10):
-        # Поиск новости в панели управления по заголовку
-        locator = (
+    def is_news_in_control_panel(self, title, description=None, timeout=10):
+        # Скролл к новости по заголовку.
+        # description=None → достаточно найти title (простой create, 2.2).
+        # description передан → раскрываем карточку и сверяем описание (валидация).
+        title_locator = (
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiScrollable(new UiSelector().scrollable(true))'
+            '.scrollIntoView(new UiSelector()'
+            '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
+            f'.text("{title}"))'
+        )
+        title_el = self.find_element(*title_locator, timeout=timeout)
+        if not title_el.is_displayed():
+            return False
+
+        if description is None:
+            return True
+
+        self.click(*self.VIEW_NEWS_ITEM)
+        desc_locator = (
             AppiumBy.ANDROID_UIAUTOMATOR,
             'new UiSelector()'
-            '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
-            f'.text("{title}")'
+            '.resourceId("ru.iteco.fmhandroid:id/news_item_description_text_view")'
+            f'.text("{description}")'
         )
-        element = self.find_element(*locator, timeout=timeout)
-        return element.is_displayed()
+        desc_el = self.find_element(*desc_locator, timeout=timeout)
+        return desc_el.is_displayed()

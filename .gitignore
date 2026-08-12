@@ -9,6 +9,7 @@ ENV/
 
 # Pytest
 .pytest_cache/
+.flake8
 
 # Allure
 allure-results/

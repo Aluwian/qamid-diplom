@@ -87,9 +87,10 @@ def authorized_driver(android_driver):
     yield driver
 
     driver.terminate_app(APP_PACKAGE)
+    driver.execute_script("mobile: clearApp", {"appId": APP_PACKAGE})
 
 
-#Фикстура для перехода в режим создания новости - нужна для удаления дублирования
+# Фикстура для перехода в режим создания новости - нужна для удаления дублирования
 @pytest.fixture
 def create_news_form(authorized_driver):
     main_page = MainPage(authorized_driver)
