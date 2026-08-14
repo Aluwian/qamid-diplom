@@ -55,6 +55,19 @@ class NewsPage(BasePage):
         "ru.iteco.fmhandroid:id/view_news_item_image_view",
     )
 
+    EDIT_NEWS_ITEM_BUTTON = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/edit_news_item_image_view"
+    )
+    NEWS_ITEM_CARD = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/news_item_material_card_view"
+    )
+    NEWS_ITEM_STATUS = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/news_item_published_text_view"
+    )
+
     def open_control_panel(self):
         # Переход в панель управления новостями (кнопка с карандашом)
         self.click(*self.EDIT_NEWS_BUTTON)
@@ -156,6 +169,10 @@ class NewsPage(BasePage):
         self.send_keys(*self.DESCRIPTION_FIELD, description)
         return description
 
+    def clear_field(self, by, value):
+        element = self.find_element(by, value)
+        element.clear()
+
     def save_news(self):
         # После описания клавиатура/разросшееся поле прячут кнопку —
         # закрываем клавиатуру и скроллим к Save по resource-id.
@@ -195,6 +212,65 @@ class NewsPage(BasePage):
         description = self.fill_description(description)
         self.save_news()
         # Возвращает (title, description) для ассертов
+        return title, description
+
+    def open_edit_news_form(self, title):
+        title_locator = (
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiScrollable(new UiSelector().scrollable(true))'
+            '.scrollIntoView(new UiSelector()'
+            '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
+            f'.text("{title}"))'
+        )
+        title_el = self.find_element(*title_locator)
+        title_y = title_el.location["y"]
+        edits = self.driver.find_elements(*self.EDIT_NEWS_ITEM_BUTTON)
+        below = [
+            el for el in edits
+            if el.is_displayed() and el.location["y"] > title_y
+        ]
+        below.sort(key=lambda el: el.location["y"])
+        below[0].click()
+
+    def set_status(self, active):
+        switcher_in_scroll = (
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiScrollable(new UiSelector().scrollable(true))'
+            '.scrollIntoView(new UiSelector()'
+            '.resourceId("ru.iteco.fmhandroid:id/switcher"))',
+        )
+        el = self.find_element(*switcher_in_scroll)
+        checked = el.get_attribute("checked") == "true"
+        if checked != active:
+            el.click()
+
+    def get_news_status(self, title):
+        card = self._card_by_title(title)
+        return card.find_element(*self.NEWS_ITEM_STATUS).text
+
+    def update_news(
+            self,
+            category=None,
+            title=None,
+            description=None,
+            date=None,
+            time=None,
+            active=None,
+    ):
+        # Меняет только переданное; остальное не трогает (поля уже заполнены)
+        if category is not None:
+            self.select_category(category)
+        if title is not None:
+            title = self.fill_title(title)
+        if date is not None:
+            self.select_date(date)
+        if time is not None:
+            self.select_time(time)
+        if description is not None:
+            description = self.fill_description(description)
+        if active is not None:
+            self.set_status(active)
+        self.save_news()
         return title, description
 
     def is_news_in_control_panel(self, title, description=None, timeout=10):

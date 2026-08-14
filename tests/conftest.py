@@ -102,6 +102,20 @@ def create_news_form(authorized_driver):
     return news_page
 
 
+# Фикстура для перехода в режим редактирования новости
+@pytest.fixture
+def edit_news_form(authorized_driver):
+    main_page = MainPage(authorized_driver)
+    news_page = NewsPage(authorized_driver)
+    with allure.step("Создать новость и открыть форму редактирования"):
+        main_page.go_to_news()
+        news_page.open_control_panel()
+        news_page.open_create_news_form()
+        title, description = news_page.create_news()
+        news_page.open_edit_news_form(title)
+    return news_page, title, description
+
+
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     # Без него фикстуры не знают: упал тест или нет
