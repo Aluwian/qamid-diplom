@@ -24,7 +24,7 @@ class NewsPage(BasePage):
         AppiumBy.ID,
         "ru.iteco.fmhandroid:id/news_item_publish_time_text_input_edit_text"
     )
-    SAVE_BUTTON = (AppiumBy.ACCESSIBILITY_ID, "Сохранить")
+    SAVE_BUTTON = (AppiumBy.ID, "ru.iteco.fmhandroid:id/save_button")
     EDIT_NEWS_BUTTON = (
         AppiumBy.ID,
         "ru.iteco.fmhandroid:id/edit_news_material_button"
@@ -157,8 +157,22 @@ class NewsPage(BasePage):
         return description
 
     def save_news(self):
-        # Клик на кнопку Сохранить
-        self.click(*self.SAVE_BUTTON)
+        # После описания клавиатура/разросшееся поле прячут кнопку —
+        # закрываем клавиатуру и скроллим к Save по resource-id.
+        try:
+            self.driver.hide_keyboard()
+        except Exception:
+            try:
+                self.driver.press_keycode(4)  # BACK
+            except Exception:
+                pass
+        save_in_scroll = (
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiScrollable(new UiSelector().scrollable(true))'
+            '.scrollIntoView(new UiSelector()'
+            '.resourceId("ru.iteco.fmhandroid:id/save_button"))',
+        )
+        self.click(*save_in_scroll)
 
     # Заполняет форму создания новости и нажимает «Сохранить»
     def create_news(

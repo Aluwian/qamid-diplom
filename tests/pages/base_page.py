@@ -26,11 +26,16 @@ class BasePage:
         element.click()
 
     def send_keys(self, by, value, input_text):
-        # Ввод текста в поле
+        # Ввод текста в поле.
+        # Длинные строки (999/1000): send_keys посимвольно слишком медленный.
+        # mobile: type — быстрый ввод (латиница; для кейсов A*999/A*1000 ок).
         element = self.find_element(by, value)
-        # Очищаем от старого текста на случай, если поле заполнено
         element.clear()
-        element.send_keys(input_text)
+        if len(input_text) >= 100:
+            element.click()
+            self.driver.execute_script("mobile: type", {"text": input_text})
+        else:
+            element.send_keys(input_text)
 
     def get_text(self, by, locator, timeout=10):
         # Метод возвращает текст(например для чтения флеш-сообщений)

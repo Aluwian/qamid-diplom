@@ -130,3 +130,52 @@ class TestCreateNews:
             )
         with allure.step("Проверить новость в панели управления"):
             assert news_page.is_news_in_control_panel(title)
+
+    @allure.id("2.30-2.33, 2.36-2.38")
+    @allure.title("Валидация описания: валидные значения")
+    @allure.severity(allure.severity_level.NORMAL)
+    @allure.story("Позитивные сценарии")
+    @pytest.mark.parametrize(
+        "description",
+        [
+            "AutotestValidationDescription",  # 2.30 латиница
+            "ОписаниеАвтотестаВалидация",     # 2.31 кириллица
+            "1234567890",                     # 2.32 цифры
+            "!@#$%^&*()",                     # 2.33 символы
+            "A",                              # 2.36 один символ
+            "A" * 1000,                       # 2.37 максимум 1000
+            "A" * 999,                        # 2.38 максимум - 1
+        ],
+    )
+    def test_create_news_description_validation(self, create_news_form, description):
+        news_page = create_news_form
+        with allure.step("Заполнить форму с проверяемым описанием и сохранить"):
+            title, _ = news_page.create_news(description=description)
+        with allure.step("Проверить новость в панели управления"):
+            assert news_page.is_news_in_control_panel(title)
+
+    @allure.id("2.34-2.35")
+    @allure.title("Отправка пустого или пробельного описания")
+    @allure.severity(allure.severity_level.CRITICAL)
+    @allure.story("Негативные сценарии")
+    @pytest.mark.parametrize(
+        "description",
+        [
+            " ",  # 2.34 пробел
+            "",   # 2.35 пустое поле
+        ],
+    )
+    def test_create_news_description_empty(self, create_news_form, description):
+        news_page = create_news_form
+        with allure.step("Заполнить все поля, кроме валидного описания"):
+            news_page.select_category("Объявление")
+            news_page.fill_title()
+            news_page.select_today_date()
+            news_page.select_current_time()
+            if description:
+                news_page.fill_description(description)
+        with allure.step("Сохранить с пустым или пробельным описанием"):
+            news_page.save_news()
+        with allure.step("Проверить toast об ошибке"):
+            toast = news_page.get_toast_message(timeout=5)
+            assert "Заполните пустые поля" in toast
