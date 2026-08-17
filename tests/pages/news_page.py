@@ -245,8 +245,22 @@ class NewsPage(BasePage):
             el.click()
 
     def get_news_status(self, title):
-        card = self._card_by_title(title)
-        return card.find_element(*self.NEWS_ITEM_STATUS).text
+        title_locator = (
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiScrollable(new UiSelector().scrollable(true))'
+            '.scrollIntoView(new UiSelector()'
+            '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
+            f'.text("{title}"))'
+        )
+        title_el = self.find_element(*title_locator)
+        title_y = title_el.location["y"]
+        statuses = self.driver.find_elements(*self.NEWS_ITEM_STATUS)
+        below = [
+            el for el in statuses
+            if el.is_displayed() and el.location["y"] > title_y
+        ]
+        below.sort(key=lambda el: el.location["y"])
+        return below[0].text
 
     def update_news(
             self,
