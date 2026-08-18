@@ -1,6 +1,7 @@
 from appium.webdriver.common.appiumby import AppiumBy
 from pages.base_page import BasePage
 from datetime import datetime, timedelta
+from selenium.common.exceptions import TimeoutException
 
 
 class NewsPage(BasePage):
@@ -54,7 +55,10 @@ class NewsPage(BasePage):
         AppiumBy.ID,
         "ru.iteco.fmhandroid:id/view_news_item_image_view",
     )
-
+    DELETE_NEWS_ITEM_BUTTON = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/delete_news_item_image_view"
+    )
     EDIT_NEWS_ITEM_BUTTON = (
         AppiumBy.ID,
         "ru.iteco.fmhandroid:id/edit_news_item_image_view"
@@ -287,6 +291,25 @@ class NewsPage(BasePage):
         self.save_news()
         return title, description
 
+    def delete_news(self, title):
+        title_locator = (
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiScrollable(new UiSelector().scrollable(true))'
+            '.scrollIntoView(new UiSelector()'
+            '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
+            f'.text("{title}"))'
+        )
+        title_el = self.find_element(*title_locator)
+        title_y = title_el.location["y"]
+        deletes = self.driver.find_elements(*self.DELETE_NEWS_ITEM_BUTTON)
+        below = [
+            el for el in deletes
+            if el.is_displayed() and el.location["y"] > title_y
+        ]
+        below.sort(key=lambda el: el.location["y"])
+        below[0].click()
+        self.click(*self.OK_BUTTON)
+
     def is_news_in_control_panel(self, title, description=None, timeout=10):
         # Скролл к новости по заголовку.
         # description=None → достаточно найти title (простой create, 2.2).
@@ -298,7 +321,10 @@ class NewsPage(BasePage):
             '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
             f'.text("{title}"))'
         )
-        title_el = self.find_element(*title_locator, timeout=timeout)
+        try:
+            title_el = self.find_element(*title_locator, timeout=timeout)
+        except TimeoutException:
+            return False
         if not title_el.is_displayed():
             return False
 

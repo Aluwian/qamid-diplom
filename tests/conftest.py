@@ -29,6 +29,7 @@ def create_driver(no_reset=True):
     return driver
 
 
+# Делает скриншот в Allure, если тест упал
 def make_screen(driver, name="failure"):
     try:
         png = driver.get_screenshot_as_png()
@@ -41,6 +42,7 @@ def make_screen(driver, name="failure"):
         pass
 
 
+# Проверяет, упал ли тест (нужно для скриншота)
 def check_test_failed(request):
     rep_call = getattr(request.node, "rep_call", None)
     return rep_call is not None and rep_call.failed
@@ -116,9 +118,22 @@ def edit_news_form(authorized_driver):
     return news_page, title, description
 
 
+# Создаёт новость и оставляет её в панели (для теста удаления)
+@pytest.fixture
+def news_on_control_panel(authorized_driver):
+    main_page = MainPage(authorized_driver)
+    news_page = NewsPage(authorized_driver)
+    with allure.step("Создать новость в панели управления"):
+        main_page.go_to_news()
+        news_page.open_control_panel()
+        news_page.open_create_news_form()
+        title, description = news_page.create_news()
+    return news_page, title, description
+
+
+# Пишет результат теста. Без него фикстуры не знают: упал тест или нет
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    # Без него фикстуры не знают: упал тест или нет
     outcome = yield
     report = outcome.get_result()
     setattr(item, f"rep_{report.when}", report)
