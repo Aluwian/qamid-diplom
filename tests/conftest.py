@@ -118,7 +118,7 @@ def edit_news_form(authorized_driver):
     return news_page, title, description
 
 
-# Создаёт новость и оставляет её в панели (для теста удаления)
+# Создаёт новость и оставляет её в панели (для тестов удаления и фильтрации)
 @pytest.fixture
 def news_on_control_panel(authorized_driver):
     main_page = MainPage(authorized_driver)

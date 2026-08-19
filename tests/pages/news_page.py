@@ -71,6 +71,14 @@ class NewsPage(BasePage):
         AppiumBy.ID,
         "ru.iteco.fmhandroid:id/news_item_published_text_view"
     )
+    FILTER_NEWS_BUTTON = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/filter_news_material_button",
+    )
+    FILTER_BUTTON = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/filter_button",
+    )
 
     def open_control_panel(self):
         # Переход в панель управления новостями (кнопка с карандашом)
@@ -79,8 +87,36 @@ class NewsPage(BasePage):
     def open_create_news_form(self):
         self.click(*self.ADD_NEWS_BUTTON)
 
+    def open_filter(self):
+        self.click(*self.FILTER_NEWS_BUTTON)
+
+    def apply_filter(self):
+        self.click(*self.FILTER_BUTTON)
+
+    def select_filter_category(self, category):
+        self.click(
+            AppiumBy.ACCESSIBILITY_ID,
+            "Показать раскрывающееся меню",
+        )
+        index = (
+            "Объявление",
+            "День рождения",
+            "Зарплата",
+            "Профсоюз",
+            "Праздник",
+            "Массаж",
+            "Благодарность",
+            "Нужна помощь",
+        ).index(category)
+        field = self.find_element(*self.CATEGORY_FIELD)
+        rect = field.rect
+        x = int(rect["x"] + rect["width"] / 2)
+        row_h = int(rect["height"])
+        y = int(rect["y"] + rect["height"] + row_h / 2 + index * row_h)
+        self.driver.tap([(x, y)])
+
     def select_category(self, category):
-        # Выбор категории
+        # Выбор категории на форме создания/редактирования
         self.click(*self.CATEGORY_FIELD)
         self.send_keys(*self.CATEGORY_FIELD, category)
         category_option = (
