@@ -79,6 +79,31 @@ class NewsPage(BasePage):
         AppiumBy.ID,
         "ru.iteco.fmhandroid:id/filter_button",
     )
+    FILTER_DATE_START = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/"
+        "news_item_publish_date_start_text_input_edit_text",
+    )
+    FILTER_DATE_END = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/"
+        "news_item_publish_date_end_text_input_edit_text",
+    )
+    EMPTY_CONTROL_PANEL = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/"
+        "control_panel_empty_news_list_text_view",
+    )
+    FILTER_STATUS_ACTIVE = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/"
+        "filter_news_active_material_check_box",
+    )
+    FILTER_STATUS_INACTIVE = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/"
+        "filter_news_inactive_material_check_box",
+    )
 
     def open_control_panel(self):
         # Переход в панель управления новостями (кнопка с карандашом)
@@ -92,6 +117,81 @@ class NewsPage(BasePage):
 
     def apply_filter(self):
         self.click(*self.FILTER_BUTTON)
+
+    def set_filter_status(self, active, inactive):
+        self._set_checkbox(self.FILTER_STATUS_ACTIVE, active)
+        self._set_checkbox(self.FILTER_STATUS_INACTIVE, inactive)
+
+    def _set_checkbox(self, locator, should_be_checked):
+        el = self.find_element(*locator)
+        checked = el.get_attribute("checked") == "true"
+        if checked != should_be_checked:
+            el.click()
+
+    def select_filter_date(self, start=None, end=None):
+        # End раньше Start: сначала End, иначе календарь уедет на завтра
+        if start == "tomorrow" and end == "today":
+            self._fill_filter_date(self.FILTER_DATE_END, "today")
+            self._fill_filter_date(self.FILTER_DATE_START, "tomorrow")
+            return
+        if start is not None:
+            self._fill_filter_date(self.FILTER_DATE_START, start)
+        if end is not None:
+            self._fill_filter_date(self.FILTER_DATE_END, end)
+
+    def _fill_filter_date(self, field, day):
+        self.click(*field)
+        if day == "today":
+            self.click(*self.OK_BUTTON)
+            return
+        if day == "tomorrow":
+            tomorrow = datetime.now() + timedelta(days=1)
+            months_ru = {
+                1: "января", 2: "февраля", 3: "марта", 4: "апреля",
+                5: "мая", 6: "июня", 7: "июля", 8: "августа",
+                9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
+            }
+            date_label = (
+                f"{tomorrow.day:02d} {months_ru[tomorrow.month]} "
+                f"{tomorrow.year}"
+            )
+            if tomorrow.day == 1:
+                self.click(*self.NEXT_MONTH_BUTTON)
+            self.click(AppiumBy.ACCESSIBILITY_ID, date_label)
+            self.click(*self.OK_BUTTON)
+            return
+        raise ValueError(f"Unsupported filter date: {day}")
+
+    def select_filter_empty_period(self):
+        # Один день в следующем месяце (Start и End)
+        now = datetime.now()
+        if now.month == 12:
+            target = now.replace(year=now.year + 1, month=1, day=15)
+        else:
+            target = now.replace(month=now.month + 1, day=15)
+        months_ru = {
+            1: "января", 2: "февраля", 3: "марта", 4: "апреля",
+            5: "мая", 6: "июня", 7: "июля", 8: "августа",
+            9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
+        }
+        date_label = (
+            f"{target.day:02d} {months_ru[target.month]} {target.year}"
+        )
+        self.click(*self.FILTER_DATE_START)
+        self.click(*self.NEXT_MONTH_BUTTON)
+        self.click(AppiumBy.ACCESSIBILITY_ID, date_label)
+        self.click(*self.OK_BUTTON)
+        self.click(*self.FILTER_DATE_END)
+        self.click(*self.OK_BUTTON)
+
+    def is_control_panel_empty(self, timeout=10):
+        try:
+            el = self.find_element(
+                *self.EMPTY_CONTROL_PANEL, timeout=timeout
+            )
+            return el.is_displayed()
+        except TimeoutException:
+            return False
 
     def select_filter_category(self, category):
         self.click(

@@ -51,6 +51,10 @@ class BasePage:
         )
         return toast_element.text
 
+    def get_alert_message(self, timeout=10):
+        # Текст AlertDialog (фильтр: «Неверно указан период»)
+        return self.get_text(AppiumBy.ID, "android:id/message", timeout)
+
     def tap_element_center(self, by, locator, times=1):
         # Кликает по центру указанного элемента несколько раз
         element = self.find_element(by, locator)
