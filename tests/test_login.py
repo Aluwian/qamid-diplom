@@ -2,6 +2,7 @@ import pytest
 from appium.webdriver.common.appiumby import AppiumBy
 import allure
 from pages.login_page import LoginPage
+from pages.main_page import MainPage
 
 
 @allure.epic("Мобильный хоспис")
@@ -156,3 +157,32 @@ class TestLogin:
                 timeout=10
             )
             assert news_title_after_restart.is_displayed()
+
+    @allure.id("1.8")
+    @allure.title("Завершение сессии пользователя")
+    @allure.severity(allure.severity_level.CRITICAL)
+    @allure.story("Сессия")
+    def test_logout(self, fresh_driver):
+        driver = fresh_driver
+        login_page = LoginPage(driver)
+        main_page = MainPage(driver)
+
+        with allure.step("Авторизоваться и оказаться на главной"):
+            login_page.login(login="login2", password="password2")
+            news_title = login_page.find_element(
+                AppiumBy.ANDROID_UIAUTOMATOR,
+                'new UiSelector().text("Новости")',
+                timeout=10
+            )
+            assert news_title.is_displayed()
+
+        with allure.step("Открыть меню выхода и нажать Выйти"):
+            main_page.logout()
+
+        with allure.step("Проверить экран Авторизация"):
+            auth_title = login_page.find_element(
+                AppiumBy.ANDROID_UIAUTOMATOR,
+                'new UiSelector().text("Авторизация")',
+                timeout=10
+            )
+            assert auth_title.is_displayed()

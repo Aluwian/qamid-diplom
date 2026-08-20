@@ -29,6 +29,18 @@ class MainPage(BasePage):
         AppiumBy.ID,
         "ru.iteco.fmhandroid:id/our_mission_title_text_view",
     )
+    AUTH_BUTTON = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/authorization_image_button",
+    )
+    LOGOUT_MENU_ITEM = (
+        AppiumBy.ANDROID_UIAUTOMATOR,
+        'new UiSelector().text("Выйти")',
+    )
+
+    def logout(self):
+        self.click(*self.AUTH_BUTTON)
+        self.click(*self.LOGOUT_MENU_ITEM)
 
     def go_to_news(self):
         self.click(*self.MAIN_MENU_BUTTON)
@@ -44,6 +56,6 @@ class MainPage(BasePage):
 
     def go_to_quotes(self):
         self.click(*self.QUOTES_BUTTON)
-        
+
     def go_back(self):
         self.driver.press_keycode(4)
