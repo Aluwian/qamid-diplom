@@ -104,6 +104,10 @@ class NewsPage(BasePage):
         "ru.iteco.fmhandroid:id/"
         "filter_news_inactive_material_check_box",
     )
+    NEWS_ITEM_TITLE = (
+        AppiumBy.ID,
+        "ru.iteco.fmhandroid:id/news_item_title_text_view",
+    )
 
     def open_control_panel(self):
         # Переход в панель управления новостями (кнопка с карандашом)
@@ -117,6 +121,9 @@ class NewsPage(BasePage):
 
     def apply_filter(self):
         self.click(*self.FILTER_BUTTON)
+
+    def sort_news(self):
+        self.click(*self.SORT_NEWS_BUTTON)
 
     def set_filter_status(self, active, inactive):
         self._set_checkbox(self.FILTER_STATUS_ACTIVE, active)
@@ -476,3 +483,26 @@ class NewsPage(BasePage):
         )
         desc_el = self.find_element(*desc_locator, timeout=timeout)
         return desc_el.is_displayed()
+
+    def get_titles_order(self, titles, max_swipes=40):
+        # Порядок своих заголовков сверху вниз (чужие пропускаем).
+        wanted = set(titles)
+        seen = []
+        self.find_element(*self.NEWS_ITEM_TITLE)
+        for _ in range(max_swipes + 1):
+            els = self.driver.find_elements(*self.NEWS_ITEM_TITLE)
+            for el in sorted(els, key=lambda e: e.location["y"]):
+                text = el.text
+                if text in wanted and text not in seen:
+                    seen.append(text)
+                    if len(seen) == len(wanted):
+                        return seen
+            try:
+                self.driver.find_element(
+                    AppiumBy.ANDROID_UIAUTOMATOR,
+                    'new UiScrollable(new UiSelector()'
+                    '.scrollable(true)).scrollForward()',
+                )
+            except Exception:
+                break
+        return seen
