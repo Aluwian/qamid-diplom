@@ -108,6 +108,11 @@ class NewsPage(BasePage):
         AppiumBy.ID,
         "ru.iteco.fmhandroid:id/news_item_title_text_view",
     )
+    MONTHS_RU = {
+        1: "января", 2: "февраля", 3: "марта", 4: "апреля",
+        5: "мая", 6: "июня", 7: "июля", 8: "августа",
+        9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
+    }
 
     def open_control_panel(self):
         # Переход в панель управления новостями (кнопка с карандашом)
@@ -146,50 +151,42 @@ class NewsPage(BasePage):
         if end is not None:
             self._fill_filter_date(self.FILTER_DATE_END, end)
 
+    def _date_content_desc(self, dt):
+        return f"{dt.day:02d} {self.MONTHS_RU[dt.month]} {dt.year}"
+
+    def _pick_calendar_day(self, dt=None):
+        # Календарь уже открыт. dt=None → сегодня (только OK).
+        if dt is not None:
+            now = datetime.now()
+            if (dt.year, dt.month) > (now.year, now.month):
+                self.click(*self.NEXT_MONTH_BUTTON)
+            self.click(
+                AppiumBy.ACCESSIBILITY_ID,
+                self._date_content_desc(dt),
+            )
+        self.click(*self.OK_BUTTON)
+
     def _fill_filter_date(self, field, day):
         self.click(*field)
         if day == "today":
-            self.click(*self.OK_BUTTON)
+            self._pick_calendar_day()
             return
         if day == "tomorrow":
-            tomorrow = datetime.now() + timedelta(days=1)
-            months_ru = {
-                1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-                5: "мая", 6: "июня", 7: "июля", 8: "августа",
-                9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
-            }
-            date_label = (
-                f"{tomorrow.day:02d} {months_ru[tomorrow.month]} "
-                f"{tomorrow.year}"
-            )
-            if tomorrow.day == 1:
-                self.click(*self.NEXT_MONTH_BUTTON)
-            self.click(AppiumBy.ACCESSIBILITY_ID, date_label)
-            self.click(*self.OK_BUTTON)
+            self._pick_calendar_day(datetime.now() + timedelta(days=1))
             return
         raise ValueError(f"Unsupported filter date: {day}")
 
     def select_filter_empty_period(self):
-        # Один день в следующем месяце (Start и End)
+        # Один день в следующем месяце (Start и End). 6.8
         now = datetime.now()
         if now.month == 12:
             target = now.replace(year=now.year + 1, month=1, day=15)
         else:
             target = now.replace(month=now.month + 1, day=15)
-        months_ru = {
-            1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-            5: "мая", 6: "июня", 7: "июля", 8: "августа",
-            9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
-        }
-        date_label = (
-            f"{target.day:02d} {months_ru[target.month]} {target.year}"
-        )
         self.click(*self.FILTER_DATE_START)
-        self.click(*self.NEXT_MONTH_BUTTON)
-        self.click(AppiumBy.ACCESSIBILITY_ID, date_label)
-        self.click(*self.OK_BUTTON)
+        self._pick_calendar_day(target)
         self.click(*self.FILTER_DATE_END)
-        self.click(*self.OK_BUTTON)
+        self._pick_calendar_day()  # уже 15-е, только OK
 
     def is_control_panel_empty(self, timeout=10):
         try:
@@ -243,24 +240,12 @@ class NewsPage(BasePage):
     def select_today_date(self):
         # Открыть календарь и подтвердить текущую дату
         self.click(*self.DATE_FIELD)
-        self.click(*self.OK_BUTTON)
+        self._pick_calendar_day()
 
     def select_tomorrow_date(self):
         # День в календаре: content-desc вида "13 августа 2026" (день с ведущим нулём)
-        tomorrow = datetime.now() + timedelta(days=1)
-        months_ru = {
-            1: "января", 2: "февраля", 3: "марта", 4: "апреля",
-            5: "мая", 6: "июня", 7: "июля", 8: "августа",
-            9: "сентября", 10: "октября", 11: "ноября", 12: "декабря",
-        }
-        date_label = (
-            f"{tomorrow.day:02d} {months_ru[tomorrow.month]} {tomorrow.year}"
-        )
         self.click(*self.DATE_FIELD)
-        if tomorrow.day == 1:
-            self.click(*self.NEXT_MONTH_BUTTON)
-        self.click(AppiumBy.ACCESSIBILITY_ID, date_label)
-        self.click(*self.OK_BUTTON)
+        self._pick_calendar_day(datetime.now() + timedelta(days=1))
 
     def select_date(self, date="today"):
         if date == "today":
