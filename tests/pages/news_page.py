@@ -323,6 +323,20 @@ class NewsPage(BasePage):
         )
         self.click(*save_in_scroll)
 
+    def _register_title(self, title):
+        titles = getattr(self.driver, "owned_titles", None)
+        if titles is not None and title and title not in titles:
+            titles.append(title)
+
+    def _replace_title(self, old, new):
+        titles = getattr(self.driver, "owned_titles", None)
+        if titles is None or not new:
+            return
+        if old in titles:
+            titles[titles.index(old)] = new
+        elif new not in titles:
+            titles.append(new)
+
     # Заполняет форму создания новости и нажимает «Сохранить»
     def create_news(
             self,
@@ -343,10 +357,12 @@ class NewsPage(BasePage):
         # description — если не передать, подставятся уникальные
         description = self.fill_description(description)
         self.save_news()
+        self._last_title = title
+        self._register_title(title)
         # Возвращает (title, description) для ассертов
         return title, description
 
-    def open_edit_news_form(self, title):
+    def _scroll_to_title(self, title):
         title_locator = (
             AppiumBy.ANDROID_UIAUTOMATOR,
             'new UiScrollable(new UiSelector().scrollable(true))'
@@ -354,15 +370,45 @@ class NewsPage(BasePage):
             '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
             f'.text("{title}"))'
         )
-        title_el = self.find_element(*title_locator)
+        return self.find_element(*title_locator)
+
+    def _find_title_visible(self, title):
+        return self.find_element(
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiSelector()'
+            '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
+            f'.text("{title}")'
+        )
+
+    def _elements_below_title(self, title_el, locator):
         title_y = title_el.location["y"]
-        edits = self.driver.find_elements(*self.EDIT_NEWS_ITEM_BUTTON)
         below = [
-            el for el in edits
+            el for el in self.driver.find_elements(*locator)
             if el.is_displayed() and el.location["y"] > title_y
         ]
         below.sort(key=lambda el: el.location["y"])
-        below[0].click()
+        return below
+
+    def _element_below_title(self, title, locator):
+        # scrollIntoView ставит title вниз экрана — корзина/карандаш ниже не видны
+        title_el = self._scroll_to_title(title)
+        for _ in range(3):
+            below = self._elements_below_title(title_el, locator)
+            if below:
+                return below[0]
+            size = self.driver.get_window_size()
+            self.driver.swipe(
+                size["width"] // 2,
+                int(size["height"] * 0.65),
+                size["width"] // 2,
+                int(size["height"] * 0.35),
+                400,
+            )
+            title_el = self._find_title_visible(title)
+        return self._elements_below_title(title_el, locator)[0]
+
+    def open_edit_news_form(self, title):
+        self._element_below_title(title, self.EDIT_NEWS_ITEM_BUTTON).click()
 
     def set_status(self, active):
         switcher_in_scroll = (
@@ -377,22 +423,7 @@ class NewsPage(BasePage):
             el.click()
 
     def get_news_status(self, title):
-        title_locator = (
-            AppiumBy.ANDROID_UIAUTOMATOR,
-            'new UiScrollable(new UiSelector().scrollable(true))'
-            '.scrollIntoView(new UiSelector()'
-            '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
-            f'.text("{title}"))'
-        )
-        title_el = self.find_element(*title_locator)
-        title_y = title_el.location["y"]
-        statuses = self.driver.find_elements(*self.NEWS_ITEM_STATUS)
-        below = [
-            el for el in statuses
-            if el.is_displayed() and el.location["y"] > title_y
-        ]
-        below.sort(key=lambda el: el.location["y"])
-        return below[0].text
+        return self._element_below_title(title, self.NEWS_ITEM_STATUS).text
 
     def update_news(
             self,
@@ -407,7 +438,10 @@ class NewsPage(BasePage):
         if category is not None:
             self.select_category(category)
         if title is not None:
+            old = getattr(self, "_last_title", None)
             title = self.fill_title(title)
+            self._replace_title(old, title)
+            self._last_title = title
         if date is not None:
             self.select_date(date)
         if time is not None:
@@ -420,23 +454,11 @@ class NewsPage(BasePage):
         return title, description
 
     def delete_news(self, title):
-        title_locator = (
-            AppiumBy.ANDROID_UIAUTOMATOR,
-            'new UiScrollable(new UiSelector().scrollable(true))'
-            '.scrollIntoView(new UiSelector()'
-            '.resourceId("ru.iteco.fmhandroid:id/news_item_title_text_view")'
-            f'.text("{title}"))'
-        )
-        title_el = self.find_element(*title_locator)
-        title_y = title_el.location["y"]
-        deletes = self.driver.find_elements(*self.DELETE_NEWS_ITEM_BUTTON)
-        below = [
-            el for el in deletes
-            if el.is_displayed() and el.location["y"] > title_y
-        ]
-        below.sort(key=lambda el: el.location["y"])
-        below[0].click()
+        self._element_below_title(title, self.DELETE_NEWS_ITEM_BUTTON).click()
         self.click(*self.OK_BUTTON)
+        titles = getattr(self.driver, "owned_titles", None)
+        if titles and title in titles:
+            titles.remove(title)
 
     def is_news_in_control_panel(self, title, description=None, timeout=10):
         # Скролл к новости по заголовку.

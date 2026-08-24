@@ -69,7 +69,7 @@ def fresh_driver(request):
     driver.quit()
 
 
-# 3. Драйвер с уже выполненной авторизацией (для CRUD тестов)
+# Драйвер с авторизацией для навигации (не CRUD: там crud_driver)
 @pytest.fixture(scope="function")
 def authorized_driver(android_driver, request):
     driver = android_driver
@@ -95,11 +95,80 @@ def authorized_driver(android_driver, request):
     driver.execute_script("mobile: clearApp", {"appId": APP_PACKAGE})
 
 
+@pytest.fixture(scope="class")
+def crud_android_driver():
+    driver = create_driver(no_reset=True)
+    yield driver
+    driver.quit()
+
+
+@pytest.fixture(scope="class")
+def crud_session(crud_android_driver):
+    driver = crud_android_driver
+    driver.terminate_app(APP_PACKAGE)
+    driver.activate_app(APP_PACKAGE)
+    login_page = LoginPage(driver)
+    try:
+        login_page.find_element(
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiSelector().text("Новости")',
+            timeout=5,
+        )
+    except Exception:
+        login_page.login(login="login2", password="password2")
+    yield driver
+
+
+@pytest.fixture(scope="function")
+def crud_driver(crud_session, request):
+    driver = crud_session
+    driver.owned_titles = []
+    driver.terminate_app(APP_PACKAGE)
+    driver.activate_app(APP_PACKAGE)
+    login_page = LoginPage(driver)
+    try:
+        login_page.find_element(
+            AppiumBy.ANDROID_UIAUTOMATOR,
+            'new UiSelector().text("Новости")',
+            timeout=5,
+        )
+    except Exception:
+        login_page.login(login="login2", password="password2")
+    yield driver
+    if check_test_failed(request):
+        make_screen(driver, request.node.name)
+    _delete_owned_news(driver)
+
+
+def _delete_owned_news(driver):
+    titles = [
+        t for t in getattr(driver, "owned_titles", [])
+        if t.startswith("Автотест_") or t.startswith("Редакт_")
+    ]
+    if not titles:
+        return
+    main_page = MainPage(driver)
+    news_page = NewsPage(driver)
+    try:
+        driver.terminate_app(APP_PACKAGE)
+        driver.activate_app(APP_PACKAGE)
+        main_page.go_to_news()
+        news_page.open_control_panel()
+    except Exception:
+        return
+    for title in titles:
+        try:
+            if news_page.is_news_in_control_panel(title, timeout=5):
+                news_page.delete_news(title)
+        except Exception:
+            pass
+
+
 # Фикстура для перехода в режим создания новости - нужна для удаления дублирования
 @pytest.fixture
-def create_news_form(authorized_driver):
-    main_page = MainPage(authorized_driver)
-    news_page = NewsPage(authorized_driver)
+def create_news_form(crud_driver):
+    main_page = MainPage(crud_driver)
+    news_page = NewsPage(crud_driver)
     with allure.step("Открыть форму создания новости"):
         main_page.go_to_news()
         news_page.open_control_panel()
@@ -109,9 +178,9 @@ def create_news_form(authorized_driver):
 
 # Фикстура для перехода в режим редактирования новости
 @pytest.fixture
-def edit_news_form(authorized_driver):
-    main_page = MainPage(authorized_driver)
-    news_page = NewsPage(authorized_driver)
+def edit_news_form(crud_driver):
+    main_page = MainPage(crud_driver)
+    news_page = NewsPage(crud_driver)
     with allure.step("Создать новость и открыть форму редактирования"):
         main_page.go_to_news()
         news_page.open_control_panel()
@@ -123,9 +192,9 @@ def edit_news_form(authorized_driver):
 
 # Создаёт новость и оставляет её в панели (для тестов удаления и фильтрации)
 @pytest.fixture
-def news_on_control_panel(authorized_driver):
-    main_page = MainPage(authorized_driver)
-    news_page = NewsPage(authorized_driver)
+def news_on_control_panel(crud_driver):
+    main_page = MainPage(crud_driver)
+    news_page = NewsPage(crud_driver)
     with allure.step("Создать новость в панели управления"):
         main_page.go_to_news()
         news_page.open_control_panel()
