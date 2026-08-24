@@ -198,6 +198,8 @@ class NewsPage(BasePage):
             return False
 
     def select_filter_category(self, category):
+        # Фильтр запоминает категорию только по клику в выпадающем списке,
+        # не по тексту в поле. Поэтому не select_category, а tap по номеру пункта.
         self.click(
             AppiumBy.ACCESSIBILITY_ID,
             "Показать раскрывающееся меню",
