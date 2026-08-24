@@ -44,17 +44,18 @@ def make_screen(driver, name="failure"):
 
 # Проверяет, упал ли тест (нужно для скриншота)
 def check_test_failed(request):
-    rep_call = getattr(request.node, "rep_call", None)
-    return rep_call is not None and rep_call.failed
+    for when in ("setup", "call"):
+        rep = getattr(request.node, f"rep_{when}", None)
+        if rep is not None and rep.failed:
+            return True
+    return False
 
 
 # 2. Базовый драйвер(для быстрого старта, сохраняется состояние)
-@pytest.fixture(scope='function')
-def android_driver(request):
+@pytest.fixture(scope="function")
+def android_driver():
     driver = create_driver(no_reset=True)
     yield driver
-    if check_test_failed(request):
-        make_screen(driver, request.node.name)
     driver.quit()
 
 
@@ -70,7 +71,7 @@ def fresh_driver(request):
 
 # 3. Драйвер с уже выполненной авторизацией (для CRUD тестов)
 @pytest.fixture(scope="function")
-def authorized_driver(android_driver):
+def authorized_driver(android_driver, request):
     driver = android_driver
 
     driver.terminate_app(APP_PACKAGE)
@@ -88,6 +89,8 @@ def authorized_driver(android_driver):
 
     yield driver
 
+    if check_test_failed(request):
+        make_screen(driver, request.node.name)
     driver.terminate_app(APP_PACKAGE)
     driver.execute_script("mobile: clearApp", {"appId": APP_PACKAGE})
 
