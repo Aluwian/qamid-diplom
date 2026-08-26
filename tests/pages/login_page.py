@@ -15,7 +15,8 @@ class LoginPage(BasePage):
     TOAST_MESSAGE = (AppiumBy.XPATH, "//android.widget.Toast")
 
     def login(self, login, password):
-        # Авторизация
+        # На API 36 экран логина может появляться не сразу после сплэша.
+        self.find_element(*self.LOGIN_FIELD, timeout=20)
         self.send_keys(*self.LOGIN_FIELD, login)
         self.send_keys(*self.PASSWORD_FIELD, password)
         self.click(*self.LOGIN_BUTTON)

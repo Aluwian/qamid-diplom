@@ -11,6 +11,7 @@ from pages.news_page import NewsPage
 APPIUM_PORT = 4723
 APPIUM_HOST = '127.0.0.1'
 APP_PACKAGE = "ru.iteco.fmhandroid"
+APP_READY_TIMEOUT = 20
 
 
 # 1. Создание драйвера с нужными настройками
@@ -82,7 +83,7 @@ def authorized_driver(android_driver, request):
         login_page.find_element(
             AppiumBy.ANDROID_UIAUTOMATOR,
             'new UiSelector().text("Новости")',
-            timeout=5
+            timeout=APP_READY_TIMEOUT
         )
     except Exception:
         login_page.login(login="login2", password="password2")
@@ -112,7 +113,7 @@ def crud_session(crud_android_driver):
         login_page.find_element(
             AppiumBy.ANDROID_UIAUTOMATOR,
             'new UiSelector().text("Новости")',
-            timeout=5,
+            timeout=APP_READY_TIMEOUT,
         )
     except Exception:
         login_page.login(login="login2", password="password2")
@@ -130,7 +131,7 @@ def crud_driver(crud_session, request):
         login_page.find_element(
             AppiumBy.ANDROID_UIAUTOMATOR,
             'new UiSelector().text("Новости")',
-            timeout=5,
+            timeout=APP_READY_TIMEOUT,
         )
     except Exception:
         login_page.login(login="login2", password="password2")

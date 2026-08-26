@@ -308,18 +308,30 @@ class NewsPage(BasePage):
         element.clear()
 
     def save_news(self):
-        # После описания клавиатура/разросшееся поле прячут кнопку —
-        # закрываем клавиатуру и скроллим к Save по resource-id.
+        # Без BACK: иначе уходим с формы, когда клавиатуры уже нет.
         try:
             self.driver.hide_keyboard()
         except Exception:
-            try:
-                self.driver.press_keycode(4)  # BACK
-            except Exception:
-                pass
+            pass
+        # Обычные кейсы — Save уже на экране
+        try:
+            self.click(*self.SAVE_BUTTON, timeout=3)
+            return
+        except Exception:
+            pass
+        # Длинное описание: снять фокус со Switch (не Title — не открываем клавиатуру)
+        try:
+            self.click(*self.ACTIVE_SWITCHER, timeout=3)
+        except Exception:
+            pass
+        try:
+            self.driver.hide_keyboard()
+        except Exception:
+            pass
         save_in_scroll = (
             AppiumBy.ANDROID_UIAUTOMATOR,
             'new UiScrollable(new UiSelector().scrollable(true))'
+            '.setMaxSearchSwipes(30)'
             '.scrollIntoView(new UiSelector()'
             '.resourceId("ru.iteco.fmhandroid:id/save_button"))',
         )
